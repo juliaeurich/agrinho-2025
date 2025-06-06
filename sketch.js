@@ -1,166 +1,84 @@
-let player;
-let energy = 0;
-let score = 0;
-let obstacles = [];
-let speed = 3; // Velocidade dos obstáculos
-let level = 1;
+let trator;
+let milhos = [];
+let pontos = 0;
+let tempo = 30; // segundos
+let jogoAcabou = false;
+let inicio;
+let vovoImg; // imagem do vovô (como emoji ou sprite opcional)
 
 function setup() {
-  createCanvas(400, 400);
-  player = new Player();
+  createCanvas(600, 400);
+  trator = createVector(width / 2, height / 2);
+  for (let i = 0; i < 10; i++) {
+    milhos.push(createVector(random(width), random(height)));
+  }
+  inicio = millis();
 }
 
 function draw() {
-  background(135, 206, 250); // Céu azul
+  background(150, 200, 100);
 
-  // Exibe energia, pontos e nível
-  fill(0);
-  textSize(16);
-  text("Energia: " + energy, 10, 20);
-  text("Pontos: " + score, 10, 40);
-  text("Nível: " + level, 10, 60);
-
-  player.show();
-  player.move();
-
-  // Gera obstáculos e fontes de energia a cada 60 frames
-  if (frameCount % 60 === 0) {
-    obstacles.push(new Obstacle());
-    if (random() < 0.3) {
-      obstacles.push(new EnergySource());
+  if (!jogoAcabou) {
+    // Atualiza o tempo
+    let tempoRestante = tempo - int((millis() - inicio) / 1000);
+    if (tempoRestante <= 0) {
+      jogoAcabou = true;
     }
-  }
 
-  // Atualiza obstáculos e fontes de energia
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    obstacles[i].update();
-    obstacles[i].show();
+    // Mostra trator
+    textSize(30);
+    text("🚜", trator.x, trator.y);
 
-    // Colisão com poluentes (perde energia)
-    if (obstacles[i].hits(player)) {
-      if (obstacles[i] instanceof Obstacle) {
-        energy -= 10;
-        score -= 5;
-      } else if (obstacles[i] instanceof EnergySource) {
-        energy += 20;
-        score += 10;
+    // Mostra milhos
+    for (let i = 0; i < milhos.length; i++) {
+      textSize(25);
+      text("🌽", milhos[i].x, milhos[i].y);
+    }
+
+    // Detecta colisão com milhos
+    for (let i = milhos.length - 1; i >= 0; i--) {
+      if (dist(trator.x, trator.y, milhos[i].x, milhos[i].y) < 30) {
+        milhos.splice(i, 1);
+        pontos++;
+        milhos.push(createVector(random(width), random(height)));
       }
-      obstacles.splice(i, 1);
     }
 
-    if (obstacles[i].offscreen()) {
-      obstacles.splice(i, 1);
-    }
-  }
+    // Texto de pontos e tempo
+    fill(0);
+    textSize(16);
+    text("Milhos colhidos: " + pontos, 10, 20);
+    text("Tempo restante: " + tempoRestante + "s", 10, 40);
 
-  // Aumenta a velocidade do jogo conforme o nível
-  if (score >= level * 50) {
-    level++;
-    speed += 0.5; // Aumenta a velocidade dos obstáculos
-  }
+  } else {
+    // Tela de banquete final com vovô
+    background(255, 245, 200);
+    textSize(30);
+    textAlign(CENTER);
+    text("🎉 Banquete Rural 🎉", width / 2, 50);
 
-  // Verifica se o jogador venceu a fase (chegou no topo)
-  if (player.y < 10) {
-    player.resetPosition();
-    score += 20;
+    let banquete = "🍞🥛";
+    if (pontos >= 5) banquete += "🧀🍯";
+    if (pontos >= 10) banquete += "🍗🥚🌽";
+
+    textSize(40);
+    text(banquete, width / 2, height / 2);
+
+    textSize(18);
+    text("Você colheu " + pontos + " milhos!", width / 2, height / 2 + 60);
+
+    // 👴 Vovô falando
+    textSize(25);
+    text("👴", width / 2 - 150, height / 2 + 50);
+    textSize(16);
+    text('"Muito bem, meu netinho!\nCom esforço vem a fartura!"', width / 2 + 60, height / 2 + 100);
   }
 }
 
 function keyPressed() {
-  if (keyCode === LEFT_ARROW) player.setDir(-1);
-  if (keyCode === RIGHT_ARROW) player.setDir(1);
-}
-
-function keyReleased() {
-  player.setDir(0);
-}
-
-// Classe do jogador
-class Player {
-  constructor() {
-    this.x = width / 2;
-    this.y = height - 30;
-    this.w = 30;
-    this.h = 30;
-    this.dir = 0;
-    this.speed = 5;
-  }
-
-  show() {
-    fill(0, 255, 0); // Cor verde para o jogador
-    rect(this.x, this.y, this.w, this.h);
-  }
-
-  move() {
-    this.x += this.dir * this.speed;
-    this.x = constrain(this.x, 0, width - this.w);
-    this.y -= speed / 200; // Movimento gradual para cima (simula corrida)
-  }
-
-  setDir(dir) {
-    this.dir = dir;
-  }
-
-  resetPosition() {
-    this.x = width / 2;
-    this.y = height - 30;
-  }
-}
-
-// Classe de obstáculos (poluentes)
-class Obstacle {
-  constructor() {
-    this.w = 40;
-    this.h = 20;
-    this.x = random(width - this.w);
-    this.y = 0;
-    this.speed = speed;
-    this.color = [169, 169, 169]; // Cor cinza dos poluentes
-  }
-
-  update() {
-    this.y += this.speed;
-  }
-
-  show() {
-    fill(...this.color);
-    rect(this.x, this.y, this.w, this.h);
-  }
-
-  hits(player) {
-    return !(player.x + player.w < this.x || player.x > this.x + this.w || player.y + player.h < this.y || player.y > this.y + this.h);
-  }
-
-  offscreen() {
-    return this.y > height;
-  }
-}
-
-// Classe de energia limpa (solar, eólica)
-class EnergySource {
-  constructor() {
-    this.w = 30;
-    this.h = 30;
-    this.x = random(width - this.w);
-    this.y = 0;
-    this.speed = speed;
-    this.color = [255, 223, 0]; // Cor amarela para energia solar
-  }
-
-  update() {
-    this.y += this.speed;
-  }
-
-  show() {
-    fill(...this.color);
-    ellipse(this.x + this.w / 2, this.y + this.h / 2, this.w, this.h);
-  }
-
-  hits(player) {
-    return !(player.x + player.w < this.x || player.x > this.x + this.w || player.y + player.h < this.y || player.y > this.y + this.h);
-  }
-
-  offscreen() {
-    return this.y > height;
-  }
+  let velocidade = 30;
+  if (keyCode === LEFT_ARROW) trator.x -= velocidade;
+  if (keyCode === RIGHT_ARROW) trator.x += velocidade;
+  if (keyCode === UP_ARROW) trator.y -= velocidade;
+  if (keyCode === DOWN_ARROW) trator.y += velocidade;
 }
