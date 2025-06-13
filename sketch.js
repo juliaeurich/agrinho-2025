@@ -121,7 +121,7 @@ function mousePressed() {
 function keyPressed() {
   // Só permite mover o trator se o jogo já começou e não acabou
   if (jogoComecou && !jogoAcabou) {
-    let velocidade = 10; // Define a velocidade do trator ao mover
+    let velocidade = 30; // Define a velocidade do trator ao mover
 
     // Move o trator para a esquerda se a seta esquerda foi pressionada
     if (keyCode === LEFT_ARROW) trator.x -= velocidade;
